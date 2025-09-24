@@ -2,7 +2,7 @@ from typing import TextIO
 import queue
 import json
 
-class Queue:
+class Rpc:
     def __init__(self):
         self.queue = queue.Queue()
     async def write(

@@ -1,0 +1,1 @@
+This is a little code for my discord rpc (queue)
