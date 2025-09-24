@@ -10,11 +10,12 @@ class Rpc:
         item :str=None
     ):
         """Write an item to the queue."""
-        if item == None or isinstance(item, str) == False:  # noqa: E711, E712
-            return
-        await self.queue.put(
-            item=item
-        )
+        if hasattr(self, "queue") and self.queue != None and isinstance(self.queue, queue.Queue):  # noqa: E711
+            if item == None or isinstance(item, str) == False:  # noqa: E711, E712
+                return
+            await self.queue.put(
+                item=item
+            )
     async def read(
         self,
     ):
@@ -26,12 +27,14 @@ class Rpc:
         self
     ):
         """Return current queue size."""
-        return self.queue.qsize()
+        if hasattr(self, "queue") and self.queue != None and isinstance(self.queue, queue.Queue):  # noqa: E711
+            return self.queue.qsize()
     def is_empty(
         self
     ):
         """Check if the queue is empty."""
-        return self.queue.empty()
+        if hasattr(self, "queue") and self.queue != None and isinstance(self.queue, queue.Queue):  # noqa: E711
+            return self.queue.empty()
     async def peek(
         self
     ):
@@ -43,10 +46,11 @@ class Rpc:
         #         item=item
         #     )
         #     return item
-        items = await self.snapshot()
-        if items != None and isinstance(items, list):  # noqa: E711
-            if items.__len__() > 0:
-                return items[0]
+        if not self.is_empty():
+            items = await self.snapshot()
+            if items != None and isinstance(items, list):  # noqa: E711
+                if items.__len__() > 0:
+                    return items[0]
     async def drain(
         self
     ):
@@ -59,14 +63,15 @@ class Rpc:
         self
     ):
         """Return a snapshot of the queue contents without removing them."""
-        items = []
-        for _ in range(self.size()):
-            item = await self.read()
-            items.append(item)
-            await self.write(
-                item=item
-            )
-        return items
+        if not self.is_empty():
+            items = []
+            for _ in range(self.size()):
+                item = await self.read()
+                items.append(item)
+                await self.write(
+                    item=item
+                )
+            return items
     async def clear(
         self
     ):
@@ -79,10 +84,9 @@ class Rpc:
         """Write queue contents to a file, one per line."""
         if fp == None or isinstance(fp, TextIO) == False:  # noqa: E711, E712
             return
-        for item in await self.snapshot():
-            fp.write(
-                s=f"{item}\n"
-            )
+        fp.write(
+            s=await self.dumps()
+        )
     async def dumps(
         self
     ):
@@ -110,7 +114,7 @@ class Rpc:
             await self.write(
                 item=line.strip()
             ) 
-    async def dump_json(
+    async def dump_snapshot_json(
         self,
         fp :TextIO=None,
         indent :int=None
@@ -123,7 +127,7 @@ class Rpc:
             obj=await self.snapshot(),
             indent=indent
         )
-    async def dumps_json(
+    async def dumps_snapshot_json(
         self,
         indent :int=None
     ):
@@ -132,7 +136,7 @@ class Rpc:
             obj=await self.snapshot(),
             indent=indent
         )
-    async def load_json(
+    async def load_snapshot_json(
         self,
         fp: TextIO = None
     ):
@@ -148,7 +152,7 @@ class Rpc:
             await self.write(
                 item=data
             )
-    async def loads_json(
+    async def loads_snapshot_json(
         self,
         data :str=None
     ):
